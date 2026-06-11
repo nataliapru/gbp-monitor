@@ -1,10 +1,11 @@
 name: GBP Monitor
 
 on:
-  schedule:
-    - cron: '*/15 * * * *'
-    - cron: '0 12 * * *'
   workflow_dispatch:
+
+  schedule:
+    - cron: "*/15 * * * *"
+    - cron: "0 12 * * *"
 
 jobs:
 
