@@ -9,13 +9,20 @@ LIMITE = 0.4
 
 
 def cotacao():
-    url = "https://economia.awesomeapi.com.br/json/last/GBP-BRL"
-    dados = requests.get(url).json()
+    url = "https://economia.awesomeapi.com.br/last/GBP-BRL"
+
+    resposta = requests.get(url)
+    dados = resposta.json()
+
+    if "GBPBRL" not in dados:
+        raise Exception(f"Erro ao buscar cotação: {dados}")
+
     return float(dados["GBPBRL"]["bid"])
 
 
 def enviar(msg):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+
     requests.post(
         url,
         data={
@@ -42,35 +49,30 @@ valor = cotacao()
 
 historico = carregar()
 
+
 if historico:
 
     anterior = historico[-1]
 
-    variacao = (
-        (valor - anterior)
-        / anterior
-    ) * 100
+    variacao = ((valor - anterior) / anterior) * 100
 
     media = sum(historico) / len(historico)
 
-    variacao_media = (
-        (valor - media)
-        / media
-    ) * 100
+    variacao_media = ((valor - media) / media) * 100
 
 
     if abs(variacao) >= LIMITE:
 
         enviar(
-            f"""
-🚨 GBP/BRL mudou rápido
+            f"""🚨 GBP/BRL mudou rápido
 
-Agora: R$ {valor:.2f}
+Cotação atual:
+R$ {valor:.2f}
 
-Variação:
+Variação desde a última leitura:
 {variacao:.2f}%
 
-Última cotação:
+Anterior:
 R$ {anterior:.2f}
 """
         )
@@ -79,10 +81,9 @@ R$ {anterior:.2f}
     if variacao_media <= -LIMITE:
 
         enviar(
-            f"""
-💷 Possível oportunidade de comprar libra
+            f"""💷 Possível oportunidade de comprar libra
 
-GBP caiu contra a média recente.
+A libra caiu em relação à média recente.
 
 Agora:
 R$ {valor:.2f}
@@ -91,6 +92,17 @@ Diferença:
 {variacao_media:.2f}%
 """
         )
+
+
+else:
+    enviar(
+        f"""✅ Monitor GBP/BRL iniciado
+
+Primeira cotação registrada:
+R$ {valor:.2f}
+
+Agora vou acompanhar a cada 15 minutos."""
+    )
 
 
 historico.append(valor)
