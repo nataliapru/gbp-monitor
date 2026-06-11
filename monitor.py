@@ -1,21 +1,21 @@
 import requests
 import json
 import os
+from datetime import date
 
 TOKEN = os.environ["TELEGRAM_TOKEN"]
 CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-LIMITE = 0.4
+IOF = 0.011
+SPREAD_WISE = 0.007
 
 
 def cotacao():
     url = "https://open.er-api.com/v6/latest/GBP"
-
-    resposta = requests.get(url)
-    dados = resposta.json()
+    dados = requests.get(url).json()
 
     if dados["result"] != "success":
-        raise Exception(f"Erro ao buscar cotação: {dados}")
+        raise Exception(dados)
 
     return float(dados["rates"]["BRL"])
 
@@ -45,64 +45,72 @@ def salvar(h):
         json.dump(h[-96:], f)
 
 
+def compra_diaria():
+
+    hoje = date.today()
+
+    if hoje <= date(2026, 6, 24):
+        return 103
+
+    if hoje <= date(2026, 7, 3):
+        return 89.60
+
+    return 0
+
+
 valor = cotacao()
+
+valor_wise = valor * (1 + SPREAD_WISE) * (1 + IOF)
 
 historico = carregar()
 
 
 if historico:
 
-    anterior = historico[-1]
-
-    variacao = ((valor - anterior) / anterior) * 100
-
     media = sum(historico) / len(historico)
 
-    variacao_media = ((valor - media) / media) * 100
+    queda = ((valor - media) / media) * 100
+
+    dias = 0
+
+    if queda <= -1.2:
+        dias = 5
+
+    elif queda <= -0.8:
+        dias = 3
+
+    elif queda <= -0.4:
+        dias = 1
 
 
-    if abs(variacao) >= LIMITE:
+    if dias:
 
-        enviar(
-            f"""🚨 GBP/BRL mudou rápido
+        libras = compra_diaria() * dias
 
-Cotação atual:
-R$ {valor:.2f}
-
-Variação desde a última leitura:
-{variacao:.2f}%
-
-Anterior:
-R$ {anterior:.2f}
-"""
+        economia = (
+            (media - valor)
+            * libras
         )
 
-
-    if variacao_media <= -LIMITE:
-
         enviar(
-            f"""💷 Possível oportunidade de comprar libra
+f"""💷 Oportunidade GBP/BRL
 
-A libra caiu em relação à média recente.
+Cotação Wise estimada:
+R$ {valor_wise:.2f}/£
 
-Agora:
-R$ {valor:.2f}
+Variação contra média:
+{queda:.2f}%
 
-Diferença:
-{variacao_media:.2f}%
+Sugestão:
+comprar £{libras:.2f}
+
+Equivale a antecipar:
+{dias} dia(s)
+
+Economia aproximada:
+R$ {economia:.2f}
 """
         )
-
-
-else:
-    enviar(
-        f"""✅ Monitor GBP/BRL iniciado
-
-Primeira cotação registrada:
-R$ {valor:.2f}
-
-Agora vou acompanhar a cada 15 minutos."""
-    )
 
 
 historico.append(valor)
