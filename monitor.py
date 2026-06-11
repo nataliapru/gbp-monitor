@@ -9,15 +9,15 @@ LIMITE = 0.4
 
 
 def cotacao():
-    url = "https://economia.awesomeapi.com.br/last/GBP-BRL"
+    url = "https://open.er-api.com/v6/latest/GBP"
 
     resposta = requests.get(url)
     dados = resposta.json()
 
-    if "GBPBRL" not in dados:
+    if dados["result"] != "success":
         raise Exception(f"Erro ao buscar cotação: {dados}")
 
-    return float(dados["GBPBRL"]["bid"])
+    return float(dados["rates"]["BRL"])
 
 
 def enviar(msg):
