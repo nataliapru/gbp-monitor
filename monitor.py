@@ -23,15 +23,13 @@ def cotacao():
 def enviar(msg):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-    resposta = requests.post(
+    requests.post(
         url,
         data={
             "chat_id": CHAT_ID,
             "text": msg
         }
     )
-
-    print(resposta.json())
 
 
 def carregar():
