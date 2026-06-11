@@ -110,5 +110,3 @@ Agora vou acompanhar a cada 15 minutos."""
 historico.append(valor)
 
 salvar(historico)
-
-enviar("🧪 Teste: o robô GBP Monitor está conectado ao Telegram.")
