@@ -3,11 +3,13 @@ name: GBP Monitor
 on:
   schedule:
     - cron: "*/15 * * * *"
+    - cron: "0 12 * * *"
 
   workflow_dispatch:
 
 jobs:
-  run:
+
+  monitor:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,7 +30,10 @@ jobs:
         with:
           commit_message: Atualiza cotação
 
+
   resumo:
+    if: github.event.schedule == '0 12 * * *' || github.event_name == 'workflow_dispatch'
+
     runs-on: ubuntu-latest
 
     steps:
