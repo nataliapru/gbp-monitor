@@ -4,13 +4,17 @@ from datetime import date
 
 TOKEN = os.environ["TELEGRAM_TOKEN"]
 CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
+AWESOME_API_KEY = os.environ["AWESOME_API_KEY"]
 
 IOF = 0.011
 SPREAD_WISE = 0.007
 
 
 def cotacao():
-    url = "https://economia.awesomeapi.com.br/json/last/GBP-BRL"
+    url = (
+        "https://economia.awesomeapi.com.br/json/last/GBP-BRL"
+        f"?token={AWESOME_API_KEY}"
+    )
 
     dados = requests.get(url).json()
 
