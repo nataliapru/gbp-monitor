@@ -5,13 +5,17 @@ from datetime import date, datetime, timedelta
 
 TOKEN = os.environ["TELEGRAM_TOKEN"]
 CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
+AWESOME_API_KEY = os.environ["AWESOME_API_KEY"]
 
 IOF = 0.011
 SPREAD_WISE = 0.007
 
 
 def cotacao():
-    url = "https://economia.awesomeapi.com.br/json/last/GBP-BRL"
+    url = (
+        "https://economia.awesomeapi.com.br/json/last/GBP-BRL"
+        f"?token={AWESOME_API_KEY}"
+    )
 
     dados = requests.get(url).json()
 
@@ -33,36 +37,17 @@ def enviar(msg):
     )
 
 
-def carregar():
+def carregar_json(nome, padrao):
     try:
-        with open("historico.json") as f:
-            dados = json.load(f)
-
-            if dados and isinstance(dados[0], float):
-                return [
-                    {
-                        "data": datetime.now().isoformat(),
-                        "valor": x
-                    }
-                    for x in dados
-                ]
-
-            return dados
-
+        with open(nome) as f:
+            return json.load(f)
     except:
-        return []
+        return padrao
 
 
-def salvar(h):
-    limite = datetime.now() - timedelta(hours=24)
-
-    h = [
-        item for item in h
-        if datetime.fromisoformat(item["data"]) >= limite
-    ]
-
-    with open("historico.json", "w") as f:
-        json.dump(h, f)
+def salvar_json(nome, dados):
+    with open(nome, "w") as f:
+        json.dump(dados, f)
 
 
 def compra_diaria():
@@ -78,11 +63,30 @@ def compra_diaria():
     return 0
 
 
+# =====================
+# COTAÇÃO ATUAL
+# =====================
+
 valor = cotacao()
 
 valor_wise = valor * (1 + SPREAD_WISE) * (1 + IOF)
 
-historico = carregar()
+
+# =====================
+# HISTÓRICO 24H
+# =====================
+
+historico = carregar_json("historico.json", [])
+
+# compatibilidade com histórico antigo
+if historico and isinstance(historico[0], float):
+    historico = [
+        {
+            "data": datetime.now().isoformat(),
+            "valor": x
+        }
+        for x in historico
+    ]
 
 
 if historico:
@@ -98,19 +102,36 @@ if historico:
     queda_media = ((valor - media_24h) / media_24h) * 100
 
 
+    nivel = 0
     dias = 0
 
     if queda_maxima <= -1.2:
+        nivel = 3
         dias = 5
 
     elif queda_maxima <= -0.8:
+        nivel = 2
         dias = 3
 
     elif queda_maxima <= -0.4:
+        nivel = 1
         dias = 1
 
 
-    if dias:
+    alerta = carregar_json(
+        "alerta.json",
+        {"nivel": 0}
+    )
+
+
+    # saiu da zona de oportunidade
+    if nivel == 0:
+        alerta["nivel"] = 0
+        salvar_json("alerta.json", alerta)
+
+
+    # nova oportunidade ou queda aumentou
+    elif nivel > alerta.get("nivel", 0):
 
         libras = compra_diaria() * dias
 
@@ -142,6 +163,16 @@ R$ {economia:.2f}
 """
         )
 
+        alerta["nivel"] = nivel
+        salvar_json(
+            "alerta.json",
+            alerta
+        )
+
+
+# =====================
+# SALVAR HISTÓRICO
+# =====================
 
 historico.append(
     {
@@ -150,4 +181,14 @@ historico.append(
     }
 )
 
-salvar(historico)
+limite = datetime.now() - timedelta(hours=24)
+
+historico = [
+    item for item in historico
+    if datetime.fromisoformat(item["data"]) >= limite
+]
+
+salvar_json(
+    "historico.json",
+    historico
+)
