@@ -1,5 +1,6 @@
 name: GBP Monitor
 
+on:
   workflow_dispatch:
 
 jobs:
