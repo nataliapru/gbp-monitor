@@ -1,7 +1,7 @@
 import requests
 import json
 import os
-from datetime import date
+from datetime import date, datetime, timedelta
 
 TOKEN = os.environ["TELEGRAM_TOKEN"]
 CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
@@ -35,14 +35,34 @@ def enviar(msg):
 def carregar():
     try:
         with open("historico.json") as f:
-            return json.load(f)
+            dados = json.load(f)
+
+            # converte histórico antigo, se existir
+            if dados and isinstance(dados[0], float):
+                return [
+                    {
+                        "data": datetime.now().isoformat(),
+                        "valor": x
+                    }
+                    for x in dados
+                ]
+
+            return dados
+
     except:
         return []
 
 
 def salvar(h):
+    limite = datetime.now() - timedelta(hours=24)
+
+    h = [
+        item for item in h
+        if datetime.fromisoformat(item["data"]) >= limite
+    ]
+
     with open("historico.json", "w") as f:
-        json.dump(h[-96:], f)
+        json.dump(h, f)
 
 
 def compra_diaria():
@@ -67,19 +87,26 @@ historico = carregar()
 
 if historico:
 
-    media = sum(historico) / len(historico)
+    valores = [x["valor"] for x in historico]
 
-    queda = ((valor - media) / media) * 100
+    maxima_24h = max(valores)
+
+    media_24h = sum(valores) / len(valores)
+
+    queda_maxima = ((valor - maxima_24h) / maxima_24h) * 100
+
+    queda_media = ((valor - media_24h) / media_24h) * 100
+
 
     dias = 0
 
-    if queda <= -1.2:
+    if queda_maxima <= -1.2:
         dias = 5
 
-    elif queda <= -0.8:
+    elif queda_maxima <= -0.8:
         dias = 3
 
-    elif queda <= -0.4:
+    elif queda_maxima <= -0.4:
         dias = 1
 
 
@@ -88,7 +115,7 @@ if historico:
         libras = compra_diaria() * dias
 
         economia = (
-            (media - valor)
+            (maxima_24h - valor)
             * libras
         )
 
@@ -98,13 +125,16 @@ f"""💷 Oportunidade GBP/BRL
 Cotação Wise estimada:
 R$ {valor_wise:.2f}/£
 
-Variação contra média:
-{queda:.2f}%
+Queda desde máxima 24h:
+{queda_maxima:.2f}%
+
+Comparação com média 24h:
+{queda_media:.2f}%
 
 Sugestão:
 comprar £{libras:.2f}
 
-Equivale a antecipar:
+Antecipação:
 {dias} dia(s)
 
 Economia aproximada:
@@ -113,6 +143,11 @@ R$ {economia:.2f}
         )
 
 
-historico.append(valor)
+historico.append(
+    {
+        "data": datetime.now().isoformat(),
+        "valor": valor
+    }
+)
 
 salvar(historico)
