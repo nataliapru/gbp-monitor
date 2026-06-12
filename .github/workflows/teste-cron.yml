@@ -11,5 +11,5 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Teste
+      - name: Teste Cron Ativo
         run: echo "Cron funcionando"
