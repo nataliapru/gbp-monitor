@@ -11,11 +11,12 @@ SPREAD_WISE = 0.007
 
 
 def cotacao():
-    url = (
-        "https://economia.awesomeapi.com.br/json/last/GBP-BRL"
-    )
+    url = "https://economia.awesomeapi.com.br/json/last/GBP-BRL"
 
     dados = requests.get(url).json()
+
+    if "GBPBRL" not in dados:
+        raise Exception(dados)
 
     return float(dados["GBPBRL"]["bid"])
 
@@ -37,7 +38,6 @@ def carregar():
         with open("historico.json") as f:
             dados = json.load(f)
 
-            # converte histórico antigo, se existir
             if dados and isinstance(dados[0], float):
                 return [
                     {
@@ -123,7 +123,7 @@ if historico:
 f"""💷 Oportunidade GBP/BRL
 
 Cotação Wise estimada:
-R$ {valor_wise:.2f}/£
+R$ {valor_wise:.4f}/£
 
 Queda desde máxima 24h:
 {queda_maxima:.2f}%
