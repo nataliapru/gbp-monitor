@@ -10,11 +10,12 @@ SPREAD_WISE = 0.007
 
 
 def cotacao():
-    url = (
-        "https://economia.awesomeapi.com.br/json/last/GBP-BRL"
-    )
+    url = "https://economia.awesomeapi.com.br/json/last/GBP-BRL"
 
     dados = requests.get(url).json()
+
+    if "GBPBRL" not in dados:
+        raise Exception(dados)
 
     return float(dados["GBPBRL"]["bid"])
 
@@ -33,6 +34,7 @@ def enviar(msg):
 
 hoje = date.today()
 
+
 if hoje <= date(2026, 6, 24):
     libras = 103
 
@@ -45,7 +47,7 @@ else:
 
 valor = cotacao()
 
-wise = valor * (1 + IOF) * (1 + SPREAD_WISE)
+wise = valor * (1 + SPREAD_WISE) * (1 + IOF)
 
 custo = wise * libras
 
@@ -54,7 +56,7 @@ enviar(
 f"""📊 GBP/BRL — Plano diário
 
 Cotação Wise estimada:
-R$ {wise:.2f}/£
+R$ {wise:.4f}/£
 
 Compra planejada hoje:
 £{libras:.2f}
