@@ -10,9 +10,13 @@ SPREAD_WISE = 0.007
 
 
 def cotacao():
-    url = "https://open.er-api.com/v6/latest/GBP"
+    url = (
+        "https://economia.awesomeapi.com.br/json/last/GBP-BRL"
+    )
+
     dados = requests.get(url).json()
-    return float(dados["rates"]["BRL"])
+
+    return float(dados["GBPBRL"]["bid"])
 
 
 def enviar(msg):
